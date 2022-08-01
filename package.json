@@ -1,0 +1,21 @@
+{
+  "name": "rest-mongodb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rm -rf ./dist && tsc",
+    "start": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/m-yal/rest-mongodb.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/m-yal/rest-mongodb/issues"
+  },
+  "homepage": "https://github.com/m-yal/rest-mongodb#readme"
+}
