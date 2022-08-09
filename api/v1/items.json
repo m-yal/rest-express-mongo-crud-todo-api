@@ -1,1 +1,1 @@
-{"items":[{"id":"9999999","text":"Connect GET method to the server","checked":false},{"id":"8888888","text":"Connect POST method to the server","checked":false},{"id":"11","text":"aaa","checked":false},{"id":"12","text":"bbb","checked":false},{"id":"13","text":"ccc","checked":false}]}
+{"users":[{"login":"max","pass":"max","sid":"cf210205-a44d-4017-be4f-4f0fac2c13f8","items":[{"id":"9999999","text":"Connect GET method to the server","checked":false}]},{"login":"a","pass":"a","sid":"","items":[{"id":"20","text":"aaa","checked":false}]}]}
