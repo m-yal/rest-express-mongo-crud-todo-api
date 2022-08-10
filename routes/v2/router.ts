@@ -41,7 +41,6 @@ router.post("", (req, res) => {
 
 const login = (req: any, res: any) => {
     const {login, pass} = req.body;
-
     if (login && pass) {
         const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
         const user: {login: string, pass: string, sid: string} | undefined = usersArr.find((user: {login: string, pass: string}) => {
@@ -51,7 +50,9 @@ const login = (req: any, res: any) => {
             user.sid = req.sessionID;
             fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
             return res.end(JSON.stringify({ok: true}));
-        }
+        } else {
+            res.end(JSON.stringify({error: "not found"}));
+        }   
     }
     res.end();
 };
@@ -94,7 +95,7 @@ const getItems = (req: any, res: any) => {
         if (user.sid === req.session.id) return user;
     });
     if (user === undefined) {
-        return res.end();
+        return res.end(JSON.stringify({error: "forbidden"}));
     }
     const items = user.items;
     res.end(JSON.stringify({items: items}));

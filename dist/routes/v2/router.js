@@ -52,6 +52,9 @@ const login = (req, res) => {
             fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
             return res.end(JSON.stringify({ ok: true }));
         }
+        else {
+            res.end(JSON.stringify({ error: "not found" }));
+        }
     }
     res.end();
 };
@@ -96,7 +99,7 @@ const getItems = (req, res) => {
             return user;
     });
     if (user === undefined) {
-        return res.end();
+        return res.end(JSON.stringify({ error: "forbidden" }));
     }
     const items = user.items;
     res.end(JSON.stringify({ items: items }));

@@ -13,14 +13,12 @@ crudRounter.use((req, res, next) => {
 })
 
 crudRounter.get(crudPath, (req, res) =>  {
-    console.log("inside get");
-    
     const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
     const user: {sid: string, items: {}[]} | undefined = usersArr.find((user: {sid: string}) => {
         if (user.sid === req.session.id) return user;
     });
     if (user === undefined) {
-        return res.end();
+        return res.end(JSON.stringify({error: "forbidden"}));
     }
     const items = user.items;
     res.end(JSON.stringify({items: items}));

@@ -28,16 +28,13 @@ app.use(session({
     },
 }));
 
-/* ===================== route path v1 ===================== */
+/* ===================== routes ===================== */
 app.use("/api/v2/router", v2Router);
 app.use("/api/v1/items", crudRouter);   
 app.use("/api/v1", authRouter);
 app.use("/", staticRouter);
-/* ===================== route path v1 ===================== */
+/* ===================== routes ===================== */
 
-// app.all("/api/v2/router", (req, res, next) => {
-//     console.log("accession to v2 routing");
-    
-// })
+
 
 app.listen(PORT, () => console.log(`Server has been started on port ${PORT}`));

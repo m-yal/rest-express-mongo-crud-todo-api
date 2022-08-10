@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { json } from 'express';
 import fs from 'fs';
 import path from 'path';
 
@@ -21,6 +21,8 @@ authRouter.post("/login", (req, res) => {
             user.sid = req.sessionID;
             fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
             return res.end(JSON.stringify({ok: true}));
+        } else {
+            res.end(JSON.stringify({error: "not found"}));
         }
     }
     res.end();

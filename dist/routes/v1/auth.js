@@ -24,6 +24,9 @@ authRouter.post("/login", (req, res) => {
             fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
             return res.end(JSON.stringify({ ok: true }));
         }
+        else {
+            res.end(JSON.stringify({ error: "not found" }));
+        }
     }
     res.end();
 });

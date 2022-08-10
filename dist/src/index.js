@@ -29,13 +29,10 @@ app.use((0, express_session_1.default)({
         return sid;
     },
 }));
-/* ===================== route path v1 ===================== */
+/* ===================== routes ===================== */
 app.use("/api/v2/router", router_1.default);
 app.use("/api/v1/items", crud_1.default);
 app.use("/api/v1", auth_1.default);
 app.use("/", satic_1.default);
-/* ===================== route path v1 ===================== */
-// app.all("/api/v2/router", (req, res, next) => {
-//     console.log("accession to v2 routing");
-// })
+/* ===================== routes ===================== */
 app.listen(PORT, () => console.log(`Server has been started on port ${PORT}`));
