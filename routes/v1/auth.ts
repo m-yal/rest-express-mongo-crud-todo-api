@@ -27,8 +27,6 @@ authRouter.post("/login", (req, res) => {
 });
 // ничего не принимает, но в итоге рубит сессию, тоже может вернуть { "ok": true }
 authRouter.post("/logout", (req, res) => {
-    console.log("inside logout");
-    
     const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
     usersArr.map((user: {sid: string}) => {
         if (user.sid === req.sessionID) user.sid = "";

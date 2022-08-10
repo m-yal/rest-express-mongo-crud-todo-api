@@ -4,8 +4,6 @@ import path from 'path';
 const staticRouter = express.Router();
 const staticPath = "";
 
-console.log("__dirname in static.ts " + __dirname);
-
 staticRouter.get(staticPath, (req, res) => {
     res.sendFile(path.resolve(__dirname, "../../../client", "index.html"));
 });

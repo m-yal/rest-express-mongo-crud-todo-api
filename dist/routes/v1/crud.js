@@ -14,6 +14,7 @@ crudRounter.use((req, res, next) => {
     next();
 });
 crudRounter.get(crudPath, (req, res) => {
+    console.log("inside get");
     const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
     const user = usersArr.find((user) => {
         if (user.sid === req.session.id)
