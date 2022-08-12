@@ -1,46 +1,43 @@
-import express from 'express';
+import express, { Router } from 'express';
 import path from 'path';
 import fs from 'fs';
+import { Request, Response, NextFunction } from 'express';
+import { InputCred } from '../user-tasks-types';
 
-const router = express.Router();
+const router: Router = express.Router();
 
-const itemsFilePath = path.resolve(__dirname, "../../../api/v1/items.json");
-const idFilePath = path.resolve(__dirname, "../../../api/v1/id.txt");
+const itemsFilePath: string = path.resolve(__dirname, "../../../api/v1/items.json");
+const idFilePath: string = path.resolve(__dirname, "../../../api/v1/id.txt");
 
-router.use((req, res, next) => {
+router.use((req: Request, res: Response, next: NextFunction): void => {
     next();
-})
+});
+
+type QueryAction = string | undefined;
 
 //через один роут с разным query string: /api/v2/router?action=login|logout|register|getItems|deleteItem|addItem|editItem и по query string вызывайте уже конкретную функцию.
-router.post("", (req, res) => {
-    const action = req.query.action;
+router.post("", (req: Request, res: Response): void | Response => {
+    const action: QueryAction = req.query.action?.toString();
     switch(action) {
         case "login":
-            login(req, res);
-            return;
+            return login(req, res);
         case "logout":
-            logout(req, res);
-            return;
+            return logout(req, res);
         case "register":
-            register(req, res);
-            return;
+            return register(req, res);
         case "getItems":
-            getItems(req, res);
-            return;
+            return getItems(req, res);
         case "deleteItem":
-            deleteItem(req, res);
-            return;
+            return deleteItem(req, res);
         case "createItem":
-            createItem(req, res);
-            return;
+            return createItem(req, res);
         case "editItem":
-            editItem(req, res);
-            return;
-    }
-})
+            return editItem(req, res);
+    };
+});
 
-const login = (req: any, res: any) => {
-    const {login, pass} = req.body;
+const login = (req: Request, res: Response): void | Response => {
+    const {login, pass}: InputCred = req.body;
     if (login && pass) {
         const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
         const user: {login: string, pass: string, sid: string} | undefined = usersArr.find((user: {login: string, pass: string}) => {
@@ -56,7 +53,7 @@ const login = (req: any, res: any) => {
     }
     res.end();
 };
-const logout = (req: any, res: any) => {
+const logout = (req: Request, res: Response): void | Response => {
     const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
     usersArr.map((user: {sid: string}) => {
         if (user.sid === req.sessionID) user.sid = "";
@@ -69,8 +66,8 @@ const logout = (req: any, res: any) => {
     });
     res.end(JSON.stringify({ok: true}));
 };
-const register = (req: any, res: any) => {
-    const {login, pass} = req.body;
+const register = (req: Request, res: Response): void | Response => {
+    const {login, pass}: InputCred = req.body;
     if (login && pass) {
         const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
         const user = usersArr.find((user: {login: string}) => {
@@ -89,7 +86,7 @@ const register = (req: any, res: any) => {
     res.end();
 };
 
-const getItems = (req: any, res: any) => {
+const getItems = (req: Request, res: Response): void | Response => {
     const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
     const user: {sid: string, items: {}[]} | undefined = usersArr.find((user: {sid: string}) => {
         if (user.sid === req.session.id) return user;
@@ -101,7 +98,7 @@ const getItems = (req: any, res: any) => {
     res.end(JSON.stringify({items: items}));
 }
 
-const deleteItem = (req: any, res: any) => {
+const deleteItem = (req: Request, res: Response): void | Response => {
     const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
     const user = usersArr.find((user: {sid: string}) => {
         if (user.sid === req.session.id) return user;
@@ -115,7 +112,7 @@ const deleteItem = (req: any, res: any) => {
     fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
     res.end(JSON.stringify({ok: true}));
 };
-const createItem = (req: any, res: any) => {
+const createItem = (req: Request, res: Response): void | Response => {
     let id: string = fs.readFileSync(idFilePath, "utf-8");
     id = (Number.parseInt(id) + 1) + "";
     fs.writeFileSync(idFilePath, id, "utf-8");
@@ -133,7 +130,7 @@ const createItem = (req: any, res: any) => {
     fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
     res.end(JSON.stringify({id: id}));
 };
-const editItem = (req: any, res: any) => {
+const editItem = (req: Request, res: Response): void | Response => {
     const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
     const user = usersArr.find((user: {sid: string}) => {
         if (user.sid === req.session.id) return user;

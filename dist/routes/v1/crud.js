@@ -14,44 +14,39 @@ crudRounter.use((req, res, next) => {
     next();
 });
 crudRounter.get(crudPath, (req, res) => {
-    const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user) => {
-        if (user.sid === req.session.id)
-            return user;
-    });
-    if (user === undefined) {
+    const { usersArr, user } = extractUsersData(req);
+    if (user === undefined)
         return res.end(JSON.stringify({ error: "forbidden" }));
-    }
-    const items = user.items;
-    res.end(JSON.stringify({ items: items }));
+    res.end(JSON.stringify({ items: user.items }));
 });
 crudRounter.post(crudPath, (req, res) => {
-    let id = fs_1.default.readFileSync(idFilePath, "utf-8");
-    id = (Number.parseInt(id) + 1) + "";
-    fs_1.default.writeFileSync(idFilePath, id, "utf-8");
-    const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user) => {
-        if (user.sid === req.session.id)
-            return user;
-    });
-    if (user === undefined) {
-        return res.end();
-    }
-    const items = user.items;
-    items.push({ id: id, text: req.body.text, checked: false });
+    const { usersArr, user } = extractUsersData(req);
+    if (user === undefined)
+        return res.end(JSON.stringify({ error: "forbidden" }));
+    const id = generateTaskId();
+    user.items.push({ id: id, text: req.body.text, checked: false });
     fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
     res.end(JSON.stringify({ id: id }));
 });
 crudRounter.put(crudPath, (req, res) => {
-    const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user) => {
-        if (user.sid === req.session.id)
-            return user;
-    });
-    if (user === undefined) {
-        return res.end();
-    }
+    let { usersArr, user } = extractUsersData(req);
+    if (user === undefined)
+        return res.end(JSON.stringify({ error: "forbidden" }));
     const { id, text, checked } = req.body;
+    user = updateTask(user, id, text, checked);
+    fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
+    res.end(JSON.stringify({ ok: true }));
+});
+crudRounter.delete(crudPath, (req, res) => {
+    const { usersArr, user } = extractUsersData(req);
+    if (user === undefined)
+        return res.end(JSON.stringify({ error: "forbidden" }));
+    const id = req.body.id;
+    user.items = user.items.filter((elem) => elem.id != id);
+    fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
+    res.end(JSON.stringify({ ok: true }));
+});
+function updateTask(user, id, text, checked) {
     user.items.map((elem) => {
         if (elem.id === id) {
             elem.text = text;
@@ -59,21 +54,17 @@ crudRounter.put(crudPath, (req, res) => {
         }
         return elem;
     });
-    fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
-    res.end(JSON.stringify({ ok: true }));
-});
-crudRounter.delete(crudPath, (req, res) => {
+    return user;
+}
+function extractUsersData(req) {
     const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user) => {
-        if (user.sid === req.session.id)
-            return user;
-    });
-    if (user === undefined) {
-        return res.end();
-    }
-    const id = req.body.id;
-    user.items = user.items.filter((elem) => elem.id != id);
-    fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
-    res.end(JSON.stringify({ ok: true }));
-});
+    const user = usersArr.find((user) => user.sid === req.session.id);
+    return { usersArr, user };
+}
+function generateTaskId() {
+    let id = fs_1.default.readFileSync(idFilePath, "utf-8");
+    id = (Number.parseInt(id) + 1) + "";
+    fs_1.default.writeFileSync(idFilePath, id, "utf-8");
+    return id;
+}
 exports.default = crudRounter;

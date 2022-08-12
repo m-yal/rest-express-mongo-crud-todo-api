@@ -14,30 +14,25 @@ router.use((req, res, next) => {
 });
 //через один роут с разным query string: /api/v2/router?action=login|logout|register|getItems|deleteItem|addItem|editItem и по query string вызывайте уже конкретную функцию.
 router.post("", (req, res) => {
-    const action = req.query.action;
+    var _a;
+    const action = (_a = req.query.action) === null || _a === void 0 ? void 0 : _a.toString();
     switch (action) {
         case "login":
-            login(req, res);
-            return;
+            return login(req, res);
         case "logout":
-            logout(req, res);
-            return;
+            return logout(req, res);
         case "register":
-            register(req, res);
-            return;
+            return register(req, res);
         case "getItems":
-            getItems(req, res);
-            return;
+            return getItems(req, res);
         case "deleteItem":
-            deleteItem(req, res);
-            return;
+            return deleteItem(req, res);
         case "createItem":
-            createItem(req, res);
-            return;
+            return createItem(req, res);
         case "editItem":
-            editItem(req, res);
-            return;
+            return editItem(req, res);
     }
+    ;
 });
 const login = (req, res) => {
     const { login, pass } = req.body;

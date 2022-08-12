@@ -15,22 +15,18 @@ authRouter.post("/login", (req, res) => {
     const { login, pass } = req.body;
     if (login && pass) {
         const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-        const user = usersArr.find((user) => {
-            if (user.login === login && user.pass === pass)
-                return true;
-        });
+        const user = usersArr.find((user) => user.login === login && user.pass === pass);
         if (user) {
             user.sid = req.sessionID;
             fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
             return res.end(JSON.stringify({ ok: true }));
         }
         else {
-            res.end(JSON.stringify({ error: "not found" }));
+            return res.end(JSON.stringify({ error: "not found" }));
         }
     }
-    res.end();
+    res.end({ error: "invalid input: empty input" });
 });
-// ничего не принимает, но в итоге рубит сессию, тоже может вернуть { "ok": true }
 authRouter.post("/logout", (req, res) => {
     const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
     usersArr.map((user) => {
@@ -39,13 +35,12 @@ authRouter.post("/logout", (req, res) => {
     });
     fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
     res.clearCookie("sid");
-    req.session.destroy(err => {
+    req.session.destroy((err) => {
         if (err)
             console.error(err);
     });
     res.end(JSON.stringify({ ok: true }));
 });
-//  принимает { "login": "...", "pass": "..." } и возвращает { "ok": true } 
 authRouter.post("/register", (req, res) => {
     const { login, pass } = req.body;
     if (login && pass) {
@@ -54,11 +49,7 @@ authRouter.post("/register", (req, res) => {
             if (user.login === login)
                 return user;
         });
-        if (user) {
-            return res.end();
-        }
-        else {
-            //add new acc to items.json
+        if (!user) {
             usersArr.push({ login: login, pass: pass, sid: `${req.sessionID}`, items: [] });
             fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
             return res.end(JSON.stringify({ ok: true }));
