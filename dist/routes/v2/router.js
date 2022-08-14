@@ -4,15 +4,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const path_1 = __importDefault(require("path"));
-const fs_1 = __importDefault(require("fs"));
+const client_1 = __importDefault(require("../../api/v2/client"));
+const uuid_1 = require("uuid");
 const router = express_1.default.Router();
-const itemsFilePath = path_1.default.resolve(__dirname, "../../../api/v1/items.json");
-const idFilePath = path_1.default.resolve(__dirname, "../../../api/v1/id.txt");
+const dbName = "todo";
+let usersCollection;
+function run() {
+    try {
+        client_1.default.connect();
+        const db = client_1.default.db(dbName);
+        usersCollection = db.collection("users");
+        db.command({ ping: 1 }, function (err, result) {
+            if (!err) {
+                console.log("Succesful connection to server established");
+            }
+            else {
+                console.log("Error occured");
+                console.log(err);
+            }
+        });
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+run();
 router.use((req, res, next) => {
     next();
 });
-//через один роут с разным query string: /api/v2/router?action=login|logout|register|getItems|deleteItem|addItem|editItem и по query string вызывайте уже конкретную функцию.
 router.post("", (req, res) => {
     var _a;
     const action = (_a = req.query.action) === null || _a === void 0 ? void 0 : _a.toString();
@@ -36,118 +55,87 @@ router.post("", (req, res) => {
 });
 const login = (req, res) => {
     const { login, pass } = req.body;
-    if (login && pass) {
-        const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-        const user = usersArr.find((user) => {
-            if (user.login === login && user.pass === pass)
-                return true;
-        });
-        if (user) {
-            user.sid = req.sessionID;
-            fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
-            return res.end(JSON.stringify({ ok: true }));
+    usersCollection.findOneAndUpdate({ login: login, pass: pass }, { $set: { sid: req.sessionID } }, (err, result) => {
+        if (err) {
+            console.log(err);
+            return res.end(JSON.stringify({ error: "not found" }));
         }
         else {
-            res.end(JSON.stringify({ error: "not found" }));
+            return res.end(JSON.stringify({ ok: true }));
         }
-    }
-    res.end();
+    });
 };
 const logout = (req, res) => {
-    const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-    usersArr.map((user) => {
-        if (user.sid === req.sessionID)
-            user.sid = "";
+    usersCollection.findOneAndUpdate({ sid: req.sessionID }, { $set: { sid: "" } }, (err, result) => {
+        if (err) {
+            console.log(err);
+            return res.end();
+        }
+        res.clearCookie("sid");
+        req.session.destroy((err) => {
+            if (err)
+                console.error(err);
+            return res.end();
+        });
+        res.end(JSON.stringify({ ok: true }));
     });
-    fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
-    res.clearCookie("sid");
-    req.session.destroy((err) => {
-        if (err)
-            console.error(err);
-    });
-    res.end(JSON.stringify({ ok: true }));
 };
 const register = (req, res) => {
     const { login, pass } = req.body;
-    if (login && pass) {
-        const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-        const user = usersArr.find((user) => {
-            if (user.login === login)
-                return user;
+    const isExist = usersCollection.findOne({ login: login }, (err, result) => console.log(err));
+    if (!isExist) {
+        const user = {
+            login: login,
+            pass: pass,
+            sid: req.sessionID,
+            items: []
+        };
+        usersCollection.insertOne(user, (err, result) => {
+            if (!err) {
+                return res.end(JSON.stringify({ ok: true }));
+            }
+            else {
+                console.log(err);
+                return res.end();
+            }
         });
-        if (user) {
-            return res.end();
+    }
+};
+function getItems(req, res) {
+    usersCollection.findOne({ sid: req.sessionID }, (err, result) => {
+        if (err || result === null) {
+            console.log(err);
+            return res.end(JSON.stringify({ error: "forbidden" }));
         }
         else {
-            //add new acc to items.json
-            usersArr.push({ login: login, pass: pass, sid: `${req.sessionID}`, items: [] });
-            fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
-            return res.end(JSON.stringify({ ok: true }));
+            return res.end(JSON.stringify({ items: result.items }));
         }
-    }
-    res.end();
-};
-const getItems = (req, res) => {
-    const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user) => {
-        if (user.sid === req.session.id)
-            return user;
     });
-    if (user === undefined) {
-        return res.end(JSON.stringify({ error: "forbidden" }));
-    }
-    const items = user.items;
-    res.end(JSON.stringify({ items: items }));
-};
+}
+;
 const deleteItem = (req, res) => {
-    const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user) => {
-        if (user.sid === req.session.id)
-            return user;
-    });
-    if (user === undefined) {
+    usersCollection.updateOne({ sid: req.sessionID }, { $pull: { items: { id: req.body.id } } }, (err, result) => {
+        if (!err)
+            return res.end(JSON.stringify({ ok: true }));
+        console.log(err);
         return res.end();
-    }
-    const id = req.body.id;
-    user.items = user.items.filter((elem) => elem.id != id);
-    fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
-    res.end(JSON.stringify({ ok: true }));
+    });
 };
 const createItem = (req, res) => {
-    let id = fs_1.default.readFileSync(idFilePath, "utf-8");
-    id = (Number.parseInt(id) + 1) + "";
-    fs_1.default.writeFileSync(idFilePath, id, "utf-8");
-    const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user) => {
-        if (user.sid === req.session.id)
-            return user;
-    });
-    if (user === undefined) {
+    const id = (0, uuid_1.v4)();
+    usersCollection.updateOne({ sid: req.sessionID }, { $push: { items: { id: id, text: req.body.text, checked: false } } }, (err, result) => {
+        if (!err)
+            return res.end(JSON.stringify({ id: id }));
+        console.log(err);
         return res.end();
-    }
-    const items = user.items;
-    items.push({ id: id, text: req.body.text, checked: false });
-    fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
-    res.end(JSON.stringify({ id: id }));
+    });
 };
 const editItem = (req, res) => {
-    const usersArr = JSON.parse(fs_1.default.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user) => {
-        if (user.sid === req.session.id)
-            return user;
-    });
-    if (user === undefined) {
+    usersCollection.updateOne({ sid: req.sessionID, "items.id": req.body.id }, { $set: { "items.$.text": req.body.text, "items.$.checked": req.body.checked } }, (err, result) => {
+        if (!err)
+            return res.end(JSON.stringify({ ok: true }));
+        console.log(err);
         return res.end();
-    }
-    const { id, text, checked } = req.body;
-    user.items.map((elem) => {
-        if (elem.id === id) {
-            elem.text = text;
-            elem.checked = checked;
-        }
-        return elem;
     });
-    fs_1.default.writeFileSync(itemsFilePath, JSON.stringify({ users: usersArr }), "utf-8");
-    res.end(JSON.stringify({ ok: true }));
 };
 exports.default = router;

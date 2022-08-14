@@ -1,13 +1,32 @@
 import express, { Router } from 'express';
-import path from 'path';
-import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
-import { InputCred } from '../user-tasks-types';
+import { InputCred, User } from '../user-tasks-types';
+import client from '../../api/v2/client';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const router: Router = express.Router();
+const dbName: string = "todo";
+let usersCollection: any;
 
-const itemsFilePath: string = path.resolve(__dirname, "../../../api/v1/items.json");
-const idFilePath: string = path.resolve(__dirname, "../../../api/v1/id.txt");
+function run() {
+    try {
+        client.connect();
+        const db = client.db(dbName);
+        usersCollection = db.collection("users");
+        db.command({ping: 1}, function(err: Error, result: any) {
+            if (!err) {
+                console.log("Succesful connection to server established");
+            } else{
+                console.log("Error occured");
+                console.log(err);
+            }
+        });
+    } catch (err) {
+        console.log(err);
+    }
+}
+run();
 
 router.use((req: Request, res: Response, next: NextFunction): void => {
     next();
@@ -15,8 +34,7 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
 
 type QueryAction = string | undefined;
 
-//через один роут с разным query string: /api/v2/router?action=login|logout|register|getItems|deleteItem|addItem|editItem и по query string вызывайте уже конкретную функцию.
-router.post("", (req: Request, res: Response): void | Response => {
+router.post("", (req: Request, res: Response) => {
     const action: QueryAction = req.query.action?.toString();
     switch(action) {
         case "login":
@@ -38,117 +56,101 @@ router.post("", (req: Request, res: Response): void | Response => {
 
 const login = (req: Request, res: Response): void | Response => {
     const {login, pass}: InputCred = req.body;
-    if (login && pass) {
-        const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
-        const user: {login: string, pass: string, sid: string} | undefined = usersArr.find((user: {login: string, pass: string}) => {
-            if (user.login === login && user.pass === pass) return true;
-        });
-        if (user) {
-            user.sid = req.sessionID;
-            fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
-            return res.end(JSON.stringify({ok: true}));
-        } else {
-            res.end(JSON.stringify({error: "not found"}));
-        }   
-    }
-    res.end();
+    usersCollection.findOneAndUpdate(
+        {login: login, pass: pass},
+        {$set: {sid: req.sessionID}},
+        (err: Error, result: {}) => {
+            if (err) {
+                console.log(err);
+                return res.end(JSON.stringify({error: "not found"}));
+            } else {
+                return res.end(JSON.stringify({ok: true}));
+            }
+        }
+    );
 };
 const logout = (req: Request, res: Response): void | Response => {
-    const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
-    usersArr.map((user: {sid: string}) => {
-        if (user.sid === req.sessionID) user.sid = "";
-    });
-    fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
-
-    res.clearCookie("sid");
-    req.session.destroy((err: Error) => {
-        if (err) console.error(err);
-    });
-    res.end(JSON.stringify({ok: true}));
+    usersCollection.findOneAndUpdate(
+        {sid: req.sessionID},
+        {$set: {sid: ""}},
+        (err: Error, result: {}) => {
+            if (err) {
+                console.log(err);
+                return res.end();
+            }
+            res.clearCookie("sid");
+            req.session.destroy((err: Error) => {
+                if (err) console.error(err);
+                return res.end();
+            });
+            res.end(JSON.stringify({ok: true}));
+        }
+    );
 };
 const register = (req: Request, res: Response): void | Response => {
     const {login, pass}: InputCred = req.body;
-    if (login && pass) {
-        const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
-        const user = usersArr.find((user: {login: string}) => {
-            if (user.login === login) return user;
+    const isExist = usersCollection.findOne({login: login}, (err: Error, result: {}) => console.log(err));
+    if (!isExist) {
+        const user = {
+            login: login,
+            pass: pass,
+            sid: req.sessionID,
+            items: []
+        };
+        usersCollection.insertOne(user, (err: Error, result: {}) => {
+            if (!err) {
+                return res.end(JSON.stringify({ok: true}));
+            } else {
+                console.log(err);
+                return res.end();
+            }
         });
-        
-        if (user) {
-            return res.end();
-        } else {
-            //add new acc to items.json
-            usersArr.push({login: login, pass: pass, sid: `${req.sessionID}`, items: []});
-            fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
-            return res.end(JSON.stringify({ok: true}));
-        }
     }
-    res.end();
 };
 
-const getItems = (req: Request, res: Response): void | Response => {
-    const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
-    const user: {sid: string, items: {}[]} | undefined = usersArr.find((user: {sid: string}) => {
-        if (user.sid === req.session.id) return user;
+function getItems(req: Request, res: Response) {
+    usersCollection.findOne({sid: req.sessionID}, (err: Error, result: {items: any[]}) => {
+        if (err || result === null) {
+            console.log(err);
+            return res.end(JSON.stringify({error: "forbidden"}));
+        } else {
+            return res.end(JSON.stringify({items: result.items}));
+        }
     });
-    if (user === undefined) {
-        return res.end(JSON.stringify({error: "forbidden"}));
-    }
-    const items = user.items;
-    res.end(JSON.stringify({items: items}));
-}
+};
 
 const deleteItem = (req: Request, res: Response): void | Response => {
-    const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user: {sid: string}) => {
-        if (user.sid === req.session.id) return user;
-    });
-    if (user === undefined) {
-        return res.end();
-    }
-
-    const id: string = req.body.id;
-    user.items = user.items.filter((elem: { id: string; }) => elem.id != id);
-    fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
-    res.end(JSON.stringify({ok: true}));
+    usersCollection.updateOne(
+        {sid: req.sessionID},
+        {$pull: {items: {id: req.body.id}}},
+        (err: Error, result: {}) => {
+            if (!err) return res.end(JSON.stringify({ok: true}));
+            console.log(err);
+            return res.end();
+        });
 };
 const createItem = (req: Request, res: Response): void | Response => {
-    let id: string = fs.readFileSync(idFilePath, "utf-8");
-    id = (Number.parseInt(id) + 1) + "";
-    fs.writeFileSync(idFilePath, id, "utf-8");
-
-    const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
-    const user: {sid: string, items: {}[]} | undefined = usersArr.find((user: {sid: string}) => {
-        if (user.sid === req.session.id) return user;
-    });
-    if (user === undefined) {
-        return res.end();
-    }
-
-    const items = user.items;
-    items.push({id: id, text: req.body.text, checked: false});
-    fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
-    res.end(JSON.stringify({id: id}));
+    const id: string = uuidv4();
+    usersCollection.updateOne(
+        {sid: req.sessionID},
+        {$push: {items: {id: id, text: req.body.text, checked: false}}},
+        (err: Error, result: {}) => {
+            if (!err) return res.end(JSON.stringify({id: id}));
+            console.log(err);
+            return res.end();
+        }
+    );
 };
 const editItem = (req: Request, res: Response): void | Response => {
-    const usersArr = JSON.parse(fs.readFileSync(itemsFilePath, "utf-8")).users;
-    const user = usersArr.find((user: {sid: string}) => {
-        if (user.sid === req.session.id) return user;
-    });
-    if (user === undefined) {
-        return res.end();
-    }
-
-    const {id, text, checked} = req.body;
-    user.items.map((elem: {id: string, text: string, checked: boolean}) => {
-        if (elem.id === id) {
-            elem.text = text;
-            elem.checked = checked;
+    usersCollection.updateOne(
+        {sid: req.sessionID, "items.id": req.body.id},
+        {$set: {"items.$.text": req.body.text, "items.$.checked": req.body.checked}},
+        (err: Error, result: {}) => {
+            if (!err) return res.end(JSON.stringify({ok: true}));
+            console.log(err);
+            return res.end();
         }
-        return elem;
-    })
-    fs.writeFileSync(itemsFilePath, JSON.stringify({users: usersArr}), "utf-8");
-    res.end(JSON.stringify({ok: true}));
+    );
 };
 
 export default router;
