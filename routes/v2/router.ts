@@ -9,12 +9,12 @@ const router: Router = express.Router();
 const dbName: string = "todo";
 let usersCollection: any;
 
-function run() {
+function run(): void {
     try {
         client.connect();
         const db = client.db(dbName);
         usersCollection = db.collection("users");
-        db.command({ping: 1}, function(err: Error, result: any) {
+        db.command({ping: 1}, function(err: Error, result: {ok: number}) {
             if (!err) {
                 console.log("Succesful connection to server established");
             } else{
@@ -34,7 +34,7 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
 
 type QueryAction = string | undefined;
 
-router.post("", (req: Request, res: Response) => {
+router.post("", (req: Request, res: Response): void | Response => {
     const action: QueryAction = req.query.action?.toString();
     switch(action) {
         case "login":
@@ -54,12 +54,12 @@ router.post("", (req: Request, res: Response) => {
     };
 });
 
-const login = (req: Request, res: Response): void | Response => {
+function login(req: Request, res: Response): void | Response {
     const {login, pass}: InputCred = req.body;
     usersCollection.findOneAndUpdate(
         {login: login, pass: pass},
         {$set: {sid: req.sessionID}},
-        (err: Error, result: {}) => {
+        (err: Error, result: User): void | Response => {
             if (err) {
                 console.log(err);
                 return res.end(JSON.stringify({error: "not found"}));
@@ -69,17 +69,17 @@ const login = (req: Request, res: Response): void | Response => {
         }
     );
 };
-const logout = (req: Request, res: Response): void | Response => {
+function logout(req: Request, res: Response): void | Response {
     usersCollection.findOneAndUpdate(
         {sid: req.sessionID},
         {$set: {sid: ""}},
-        (err: Error, result: {}) => {
+        (err: Error, result: User): void | Response => {
             if (err) {
                 console.log(err);
                 return res.end();
             }
             res.clearCookie("sid");
-            req.session.destroy((err: Error) => {
+            req.session.destroy((err: Error): Response => {
                 if (err) console.error(err);
                 return res.end();
             });
@@ -87,9 +87,9 @@ const logout = (req: Request, res: Response): void | Response => {
         }
     );
 };
-const register = (req: Request, res: Response): void | Response => {
+function register(req: Request, res: Response): void | Response {
     const {login, pass}: InputCred = req.body;
-    const isExist = usersCollection.findOne({login: login}, (err: Error, result: {}) => console.log(err));
+    const isExist = usersCollection.findOne({login: login}, (err: Error, result: User) => console.log(err));
     if (!isExist) {
         const user = {
             login: login,
@@ -97,7 +97,7 @@ const register = (req: Request, res: Response): void | Response => {
             sid: req.sessionID,
             items: []
         };
-        usersCollection.insertOne(user, (err: Error, result: {}) => {
+        usersCollection.insertOne(user, (err: Error, result: User) => {
             if (!err) {
                 return res.end(JSON.stringify({ok: true}));
             } else {
@@ -108,8 +108,8 @@ const register = (req: Request, res: Response): void | Response => {
     }
 };
 
-function getItems(req: Request, res: Response) {
-    usersCollection.findOne({sid: req.sessionID}, (err: Error, result: {items: any[]}) => {
+function getItems(req: Request, res: Response): void | Response {
+    usersCollection.findOne({sid: req.sessionID}, (err: Error, result: User) => {
         if (err || result === null) {
             console.log(err);
             return res.end(JSON.stringify({error: "forbidden"}));
@@ -119,33 +119,33 @@ function getItems(req: Request, res: Response) {
     });
 };
 
-const deleteItem = (req: Request, res: Response): void | Response => {
+function deleteItem(req: Request, res: Response): void | Response {
     usersCollection.updateOne(
         {sid: req.sessionID},
         {$pull: {items: {id: req.body.id}}},
-        (err: Error, result: {}) => {
+        (err: Error, result: User) => {
             if (!err) return res.end(JSON.stringify({ok: true}));
             console.log(err);
             return res.end();
         });
 };
-const createItem = (req: Request, res: Response): void | Response => {
+function createItem(req: Request, res: Response): void | Response {
     const id: string = uuidv4();
     usersCollection.updateOne(
         {sid: req.sessionID},
         {$push: {items: {id: id, text: req.body.text, checked: false}}},
-        (err: Error, result: {}) => {
+        (err: Error, result: User) => {
             if (!err) return res.end(JSON.stringify({id: id}));
             console.log(err);
             return res.end();
         }
     );
 };
-const editItem = (req: Request, res: Response): void | Response => {
+function editItem(req: Request, res: Response): void | Response {
     usersCollection.updateOne(
         {sid: req.sessionID, "items.id": req.body.id},
         {$set: {"items.$.text": req.body.text, "items.$.checked": req.body.checked}},
-        (err: Error, result: {}) => {
+        (err: Error, result: User) => {
             if (!err) return res.end(JSON.stringify({ok: true}));
             console.log(err);
             return res.end();

@@ -53,7 +53,7 @@ router.post("", (req, res) => {
     }
     ;
 });
-const login = (req, res) => {
+function login(req, res) {
     const { login, pass } = req.body;
     usersCollection.findOneAndUpdate({ login: login, pass: pass }, { $set: { sid: req.sessionID } }, (err, result) => {
         if (err) {
@@ -64,8 +64,9 @@ const login = (req, res) => {
             return res.end(JSON.stringify({ ok: true }));
         }
     });
-};
-const logout = (req, res) => {
+}
+;
+function logout(req, res) {
     usersCollection.findOneAndUpdate({ sid: req.sessionID }, { $set: { sid: "" } }, (err, result) => {
         if (err) {
             console.log(err);
@@ -79,8 +80,9 @@ const logout = (req, res) => {
         });
         res.end(JSON.stringify({ ok: true }));
     });
-};
-const register = (req, res) => {
+}
+;
+function register(req, res) {
     const { login, pass } = req.body;
     const isExist = usersCollection.findOne({ login: login }, (err, result) => console.log(err));
     if (!isExist) {
@@ -100,7 +102,8 @@ const register = (req, res) => {
             }
         });
     }
-};
+}
+;
 function getItems(req, res) {
     usersCollection.findOne({ sid: req.sessionID }, (err, result) => {
         if (err || result === null) {
@@ -113,15 +116,16 @@ function getItems(req, res) {
     });
 }
 ;
-const deleteItem = (req, res) => {
+function deleteItem(req, res) {
     usersCollection.updateOne({ sid: req.sessionID }, { $pull: { items: { id: req.body.id } } }, (err, result) => {
         if (!err)
             return res.end(JSON.stringify({ ok: true }));
         console.log(err);
         return res.end();
     });
-};
-const createItem = (req, res) => {
+}
+;
+function createItem(req, res) {
     const id = (0, uuid_1.v4)();
     usersCollection.updateOne({ sid: req.sessionID }, { $push: { items: { id: id, text: req.body.text, checked: false } } }, (err, result) => {
         if (!err)
@@ -129,13 +133,15 @@ const createItem = (req, res) => {
         console.log(err);
         return res.end();
     });
-};
-const editItem = (req, res) => {
+}
+;
+function editItem(req, res) {
     usersCollection.updateOne({ sid: req.sessionID, "items.id": req.body.id }, { $set: { "items.$.text": req.body.text, "items.$.checked": req.body.checked } }, (err, result) => {
         if (!err)
             return res.end(JSON.stringify({ ok: true }));
         console.log(err);
         return res.end();
     });
-};
+}
+;
 exports.default = router;
