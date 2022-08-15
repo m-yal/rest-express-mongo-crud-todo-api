@@ -8,6 +8,6 @@ const path_1 = __importDefault(require("path"));
 const staticRouter = express_1.default.Router();
 const staticPath = "";
 staticRouter.get(staticPath, (req, res) => {
-    res.sendFile(path_1.default.resolve(__dirname, "../../../client", "index.html"));
+    res.sendFile(path_1.default.resolve(__dirname, "../../../src/client", "index.html"));
 });
 exports.default = staticRouter;

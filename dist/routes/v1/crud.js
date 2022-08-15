@@ -8,8 +8,8 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const crudRounter = express_1.default.Router();
 const crudPath = "";
-const itemsFilePath = path_1.default.resolve(__dirname, "../../../api/v1/items.json");
-const idFilePath = path_1.default.resolve(__dirname, "../../../api/v1/id.txt");
+const itemsFilePath = path_1.default.resolve(__dirname, "../../../src/storage/v1/items.json");
+const idFilePath = path_1.default.resolve(__dirname, "../../../src/storage/v1/id.txt");
 crudRounter.use((req, res, next) => {
     next();
 });

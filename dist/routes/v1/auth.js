@@ -7,7 +7,7 @@ const express_1 = __importDefault(require("express"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const authRouter = express_1.default.Router();
-const itemsFilePath = path_1.default.resolve(__dirname, "../../../api/v1/items.json");
+const itemsFilePath = path_1.default.resolve(__dirname, "../../../src/storage/v1/items.json");
 authRouter.use((req, res, next) => {
     next();
 });
