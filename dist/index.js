@@ -5,10 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
-// import session from 'express-session';
-// import { v4 as uuidv4 } from 'uuid';
-// import client from './storage/v2/mongo-client';
-// import MongoStore from 'connect-mongo';
 const session_1 = __importDefault(require("./session-middlvare/session"));
 const crud_1 = __importDefault(require("./routes/v1/crud"));
 const auth_1 = __importDefault(require("./routes/v1/auth"));
