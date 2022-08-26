@@ -18,7 +18,7 @@ function run() {
         exports.usersCollection = db.collection("users");
         db.command({ ping: 1 }, function (err, result) {
             if (!err) {
-                console.log("Succesful connection to server established");
+                console.log("Succesful connection to MongoDB established");
             }
             else {
                 console.log("Error occured during connection to server");

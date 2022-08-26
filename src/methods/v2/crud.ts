@@ -22,7 +22,8 @@ export function deleteItem(req: Request, res: Response): void | Response {
             if (!err) return res.end(JSON.stringify({ok: true}));
             console.log(err);
             return res.end();
-        });
+        }
+    );
 };
 
 export function createItem(req: Request, res: Response): void | Response {
