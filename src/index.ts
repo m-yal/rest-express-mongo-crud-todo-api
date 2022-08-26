@@ -23,7 +23,7 @@ app.use(sessionMiddleware);
 app.use("/api/v2/router", v2Router);
 app.use("/api/v1/items", crudRouter);   
 app.use("/api/v1", authRouter);
-// app.use("/", staticRouter);
+app.use("/", staticRouter);
 /* ===================== routing ====================== */
 
 app.listen(PORT, () => console.log(`Server has been started on port ${PORT}`));
