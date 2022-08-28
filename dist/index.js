@@ -10,15 +10,10 @@ const crud_1 = __importDefault(require("./routes/v1/crud"));
 const auth_1 = __importDefault(require("./routes/v1/auth"));
 const satic_1 = __importDefault(require("./routes/static/satic"));
 const router_1 = __importDefault(require("./routes/v2/router"));
-const cors_1 = __importDefault(require("cors"));
+const cors_1 = __importDefault(require("./cors-middleware/cors"));
 const app = (0, express_1.default)();
 const PORT = 3005;
-const corsOptions = {
-    origin: `http://localhost:8080`,
-    optionsSuccessStatus: 200,
-    credentials: true,
-};
-app.use((0, cors_1.default)(corsOptions));
+app.use(cors_1.default);
 app.use(body_parser_1.default.json());
 app.use(session_1.default);
 /* ===================== routing ===================== */

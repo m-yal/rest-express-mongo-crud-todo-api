@@ -5,17 +5,12 @@ import crudRouter from "./routes/v1/crud";
 import authRouter from './routes/v1/auth';
 import staticRouter from "./routes/static/satic";
 import v2Router from "./routes/v2/router";
-import cors from 'cors';
+import corsMiddleware from "./cors-middleware/cors";
 
 const app = express();
 const PORT: number = 3005;
-const corsOptions = {
-    origin: `http://localhost:8080`,
-    optionsSuccessStatus: 200,
-    credentials: true,
-};
 
-app.use(cors(corsOptions));
+app.use(corsMiddleware);
 app.use(bodyParser.json());
 app.use(sessionMiddleware);
 
