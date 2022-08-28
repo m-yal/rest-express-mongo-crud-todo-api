@@ -134,6 +134,22 @@ README:
             padding-left: 3px;
             padding-right: 3px;
         }
+        .startPage{
+            cursor: pointer;
+            padding-left: 3px;
+            padding-right: 3px;
+            background-color:#27ae60;
+            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: large;
+        }
+        .startButton{
+            width: 300px;
+            height: 200px;
+        }
         .status h3{
             padding: 16px;
         }
@@ -171,27 +187,6 @@ README:
             transition: background .1s,color .1s;
         }
 
-        .settings {
-            margin: 20px 0;
-        }
-        .settings label {
-            margin: 5px 0;
-            display: block;
-        }
-        .settings input {
-            width: 300px;
-        }
-
-        .settings button {
-            background: white;
-            margin: 2px;
-            padding: 2px 5px;
-            box-shadow: 0 2px 4px 0 rgb(0 0 0 / 20%), 0 25px 50px 0 rgb(0 0 0 / 10%);
-        }
-        .settings button.selected {
-            background: #27ae60;
-            color: white;
-        }
         :focus {
             outline: #27ae60 dashed 2px;
         }
@@ -222,29 +217,9 @@ README:
 </head>
 <body>
 <div id="app">
-    <header class="header">
-        <h1 class="logo">Ш<span style="color: #27ae60">++</span></h1>  
-    </header>
     <main>
-        <div class="settings">
-            <h3>Настройки приложения:</h2>
-            <label>
-                Api URL:
-                <input type="text" v-model="apiURL">
-            </label>
-            <div>
-                На каком языке бекенд?
-                <button @click="backendLanguage='PHP'" :class="{'selected': backendLanguage === 'PHP'}">PHP</button>
-                <button @click="backendLanguage='JS'"  :class="{'selected': backendLanguage === 'JS'}">JS</button>
-            </div>
-            <div>
-                Версия АПИ
-                <button @click="apiVersion='v1'" :class="{'selected': apiVersion === 'v1'}">v1</button>
-                <button @click="apiVersion='v2'" :class="{'selected': apiVersion === 'v2'}">v2</button>
-            </div>
-            <div>
-                <button @click="getTasks()" class="primary">Поехали</button>
-            </div>
+        <div class="startPage">
+            <button @click="getTasks()" class="startButton">Поехали</button>
         </div>
         <div class="wrapper login" v-if="step === 'login'">
             <h3>Доступ к учетной записи</h1>
@@ -329,21 +304,14 @@ README:
                 pass: '',
                 backendLanguage: 'JS',
                 apiURL: 'http://localhost:3005/api/',
-                apiVersion: 'v1',
+                apiVersion: 'v2',
                 step: ''
-            },
-            computed: {
-                backendSuffix() {
-                    return this.backendLanguage === 'PHP' ? '.php' : '';
-                },
             },
             methods: {
                 getTasks: function () {
-                    const route = this.apiVersion === 'v1' ? '/items' : '/router';
-                    const qs = {action: this.apiVersion === 'v1' ? '' : 'getItems'};
-                    fetch(this.apiURL + this.apiVersion + route + this.backendSuffix + '?' + new URLSearchParams(qs), { 
+                    fetch(this.apiURL + this.apiVersion + '/router?action=getItems', { 
                         credentials: 'include',
-                        method: this.apiVersion === 'v1' ? 'GET' : 'POST',
+                        method: 'POST',
                     })
                         .then(res => res.json())
                         .then((response) => {
@@ -356,16 +324,17 @@ README:
                                 })
                                 this.step = 'items';
                             }
+                            const startButton = document.querySelector('.startButton');
+                            if (startButton) startButton.remove();
                         }).catch((error) => {
                             this.step = 'error';
                         })
                 },
                 deleteTask: function (index) {
                     let request = JSON.stringify({ id: index, });
-                    const route = this.apiVersion === 'v1' ? '/items' : '/router';
-                    const qs = {action: this.apiVersion === 'v1' ? '' : 'deleteItem'};
-                    fetch(this.apiURL + this.apiVersion + route + this.backendSuffix + '?' + new URLSearchParams(qs), {
-                        method: this.apiVersion === 'v1' ? 'DELETE' : 'POST',
+                    const route = '/router';
+                    fetch(this.apiURL + this.apiVersion + route +'?action=deleteItem', {
+                        method: 'POST',
                         body: request,
                         credentials: 'include',
                         headers: {
@@ -383,10 +352,9 @@ README:
                 addTask: function () {
                     if (this.new_task.text.trim() !== '') {
                         let request = JSON.stringify({ text: this.new_task.text });
-                        const route = this.apiVersion === 'v1' ? '/items' : '/router';
-                        const qs = {action: this.apiVersion === 'v1' ? '' : 'createItem'};
-                        fetch(this.apiURL + this.apiVersion + route + this.backendSuffix + '?' + new URLSearchParams(qs), {
-                            method: this.apiVersion === 'v1' ? 'POST' : 'POST',
+                        const route = '/router';
+                        fetch(this.apiURL + this.apiVersion + route + '?action=createItem', {
+                            method: 'POST',
                             body: request,
                             credentials: 'include',
                             headers: {
@@ -405,10 +373,9 @@ README:
                 },
                 updateTask: function (index, id) {
                     let request = JSON.stringify({ text: this.tasks[index].text, id: id, checked: this.tasks[index].checked });
-                    const route = this.apiVersion === 'v1' ? '/items' : '/router';
-                    const qs = {action: this.apiVersion === 'v1' ? '' : 'editItem'};
-                    fetch(this.apiURL + this.apiVersion + route + this.backendSuffix + '?' + new URLSearchParams(qs), {
-                        method: this.apiVersion === 'v1' ? 'PUT' : 'POST',
+                    const route = '/router';
+                    fetch(this.apiURL + this.apiVersion + route + '?action=editItem', {
+                        method: 'POST',
                         body: request,
                         credentials: 'include',
                         headers: {
@@ -442,10 +409,9 @@ README:
                     this.$set(this.tasks[index], 'inputedit', '');
                 },
                 logout() {
-                    const route = this.apiVersion === 'v1' ? '/logout' : '/router';
-                    const qs = {action: this.apiVersion === 'v1' ? '' : 'logout'};
-                    fetch(this.apiURL + this.apiVersion + route + this.backendSuffix + '?' + new URLSearchParams(qs), {
-                        method: this.apiVersion === 'v1' ? 'POST' : 'POST',
+                    const route = '/router';
+                    fetch(this.apiURL + this.apiVersion + route + '?action=logout', {
+                        method: 'POST',
                         credentials: 'include',
                     }).then(res => res.json())
                         .then((response) => {
@@ -458,10 +424,10 @@ README:
                 logIn() {
                     if (this.login.trim() !== '' && this.pass.trim()) {
                         let params = JSON.stringify({ login: this.login, pass: this.pass });
-                        const route = this.apiVersion === 'v1' ? '/login' : '/router';
-                        const qs = {action: this.apiVersion === 'v1' ? '' : 'login'};
-                        fetch(this.apiURL + this.apiVersion + route + this.backendSuffix + '?' + new URLSearchParams(qs), {
-                            method: this.apiVersion === 'v1' ? 'POST' : 'POST',
+                        const route = '/router';
+                        const qs = {action: 'login'};
+                        fetch(this.apiURL + this.apiVersion + route + '?action=login', {
+                            method: 'POST',
                             credentials: 'include',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -485,10 +451,9 @@ README:
                 register() {
                     if (this.login.trim() !== '' && this.pass.trim()) {
                         let params = JSON.stringify({ login: this.login, pass: this.pass });
-                        const route = this.apiVersion === 'v1' ? '/register' : '/router';
-                        const qs = {action: this.apiVersion === 'v1' ? '' : 'register'};
-                        fetch(this.apiURL + this.apiVersion + route + this.backendSuffix + '?' + new URLSearchParams(qs), {
-                            method: this.apiVersion === 'v1' ? 'POST' : 'POST',
+                        const route = '/router';
+                        fetch(this.apiURL + this.apiVersion + route + '?action=register', {
+                            method: 'POST',
                             body: params,
                             headers: {
                                 'Content-Type': 'application/json'
