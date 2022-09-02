@@ -10,16 +10,13 @@ import corsMiddleware from "./cors-middleware/cors";
 const app = express();
 const PORT: number = 3005;
 
-/* middleware */
 app.use(corsMiddleware);
 app.use(bodyParser.json());
 app.use(sessionMiddleware);
 
-/* routing */
 app.use("/api/v2/router", v2Router);
 app.use("/api/v1/items", crudRouter);   
 app.use("/api/v1", authRouter);
 app.use("/", staticRouter);
 
-/* server start */
 app.listen(PORT, () => console.log(`Server has been started on port ${PORT}`));
