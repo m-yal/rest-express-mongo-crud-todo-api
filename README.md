@@ -5,7 +5,7 @@ REST, MonogDB, Express server of todo app.
 Compiled code situated in dist directory. Source code in src. Node modules in node_modules.
 
 Has 2 versions of api:
-v1 - means storage credentials and tasks in file by ./storage/v1;
+v1 - means storage credentials and tasks in file by ./storage/v1; Can be launched by using CORS
 v2 - means storage credentials and tasks in MongoDB client ./storage/v2.
 
 For handling session management uses express-session middleware in ./session-middleware.
