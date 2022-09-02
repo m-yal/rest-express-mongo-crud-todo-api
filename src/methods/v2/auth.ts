@@ -4,18 +4,14 @@ import { usersCollection } from '../../storage/v2/mongo-client';
 
 export function login(req: Request, res: Response): void | Response {
     const {login, pass}: InputCred = req.body;
-    usersCollection.findOneAndUpdate(
-        {login: login, pass: pass},
-        {$set: {sid: req.sessionID}},
-        (err: Error, result: User): void | Response => {
-            if (err) {
-                console.log(err);
-                return res.end(JSON.stringify({error: "not found"}));
-            } else {
-                return res.end(JSON.stringify({ok: true}));
-            }
+    usersCollection.findOne({login: login, pass: pass}, (err: Error, result: any): void | Response => {
+        if (result === null) {
+            return res.end(JSON.stringify({error: "not found"}));
+        } else {
+            usersCollection.updateOne({login: login}, {$set: {sid: req.sessionID}});
+            return res.end(JSON.stringify({ok: true}));
         }
-    );
+    });
 };
 export function logout(req: Request, res: Response): void | Response {
     usersCollection.findOneAndUpdate(
