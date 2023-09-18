@@ -1,4 +1,4 @@
-# rest-mongodb
+# rest-express-mongo-crud-todo-api
 
 REST, MonogDB, Express server of todo app.
 
